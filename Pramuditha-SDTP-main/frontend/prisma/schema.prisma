@@ -1,0 +1,131 @@
+// schema.prisma
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  landloard
+  student
+  warden
+}
+
+enum PropertyStatus {
+  available
+  reserved
+  rented
+  pending
+  rejected
+}
+
+enum ReservationStatus {
+  requested
+  accepted
+  rejected
+  cancelled
+}
+
+// Models for your database
+model User {
+  id                     Int           @id @default(autoincrement())
+  username               String        @unique
+  password               String
+  role                   UserRole
+  contactInfo            String?
+  avatar                 String?
+  properties             Property[]
+  reservationsAsStudent  Reservation[] @relation("StudentReservations")
+  reservationsAsLandlord Reservation[] @relation("LandlordReservations")
+  chatRoomsAsStudent     ChatRoom[]    @relation("StudentChatRooms")
+  chatRoomsAsLandlord    ChatRoom[]    @relation("LandlordChatRooms")
+  chatMessages           ChatMessage[]
+  reviews                Review[]
+  articles               Article[]
+}
+
+model Property {
+  id           Int            @id @default(autoincrement())
+  landlordId   Int
+  landlord     User           @relation(fields: [landlordId], references: [id])
+  title        String
+  description  String
+  location     String
+  longitude    Float
+  latitude     Float
+  rentalPrice  Float
+  status       PropertyStatus
+  image        String
+  image2       String?
+  image3       String?
+  listedOn     DateTime       @default(now())
+  reservations Reservation[]
+  reviews      Review[]
+}
+
+model Reservation {
+  id              Int               @id @default(autoincrement())
+  propertyId      Int
+  studentId       Int
+  property        Property          @relation(fields: [propertyId], references: [id])
+  student         User              @relation(fields: [studentId], references: [id], name: "StudentReservations")
+  landlord        User              @relation(name: "LandlordReservations", fields: [userId], references: [id])
+  status          ReservationStatus
+  reservationDate DateTime
+  duration        Int
+  userId          Int
+}
+
+model ChatRoom {
+  id         Int           @id @default(autoincrement())
+  studentId  Int
+  landlordId Int
+  student    User          @relation(fields: [studentId], references: [id], name: "StudentChatRooms")
+  landlord   User          @relation(fields: [landlordId], references: [id], name: "LandlordChatRooms")
+  messages   ChatMessage[]
+
+  @@unique([studentId, landlordId])
+}
+
+model ChatMessage {
+  id         Int      @id @default(autoincrement())
+  chatRoomId Int
+  senderId   Int
+  chatRoom   ChatRoom @relation(fields: [chatRoomId], references: [id])
+  sender     User     @relation(fields: [senderId], references: [id])
+  content    String
+  timestamp  DateTime @default(now())
+}
+
+model Article {
+  id          Int      @id @default(autoincrement())
+  wardenId    Int?
+  warden      User?    @relation(fields: [wardenId], references: [id])
+  title       String
+  content     String
+  image       String
+  publishDate DateTime @default(now())
+}
+
+model Review {
+  id         Int      @id @default(autoincrement())
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id])
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id])
+  username   String
+  rating     Int
+  message    String
+  timestamp  DateTime @default(now())
+}
+
+model Contact {
+  id      Int    @id @default(autoincrement())
+  name    String
+  email   String
+  message String
+}

@@ -1,0 +1,51 @@
+version: "3.8"
+
+services:
+    frontend:
+        container_name: nextjs-frontend
+        build:
+            context: .
+            dockerfile: ./Dockerfiles/Frontend/Dockerfile
+        ports:
+            - "4173:4173"
+        environment:
+            - NODE_ENV=production
+        depends_on:
+            - db
+            - backend
+        networks:
+            - app-network
+
+    backend:
+        container_name: php-backend
+        build:
+            context: .
+            dockerfile: ./Dockerfiles/Backend/Dockerfile
+        volumes:
+            - ./backend:/var/www/html
+        ports:
+            - "8080:80"
+        depends_on:
+            - db
+        networks:
+            - app-network
+
+    db:
+        container_name: mysql-db
+        image: mysql:5.7
+        platform: linux/amd64
+        volumes:
+            - ./database:/var/lib/mysql
+        environment:
+            MYSQL_ROOT_PASSWORD: rootpassword
+            MYSQL_DATABASE: hostel_management
+            MYSQL_USER: user
+            MYSQL_PASSWORD: password
+        ports:
+            - "3306:3306"
+        networks:
+            - app-network
+
+networks:
+    app-network:
+        driver: bridge
